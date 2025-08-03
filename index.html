@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureChat - Private Two-Person Messaging</title>
+    
+    <!-- Feather Icons CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-storage-compat.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Authentication Screen */
+        .auth-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .auth-title {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .auth-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .google-signin-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .google-signin-btn:hover {
+            background: #3367d6;
+        }
+        
+        /* Main Chat Interface */
+        .chat-container {
+            display: none;
+            height: 100vh;
+            background: white;
+        }
+        
+        /* Header */
+        .chat-header {
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .contact-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .contact-info h3 {
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+        
+        .contact-status {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .header-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .header-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        
+        .message.own {
+            flex-direction: row-reverse;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+        }
+        
+        .message.own .message-bubble {
+            background: #667eea;
+            color: white;
+        }
+        
+        .message.other .message-bubble {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .message-time {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 5px;
+        }
+        
+        .message-status {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 10px 20px;
+            font-style: italic;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* Media Messages */
+        .media-message {
+            max-width: 250px;
+        }
+        
+        .media-message img {
+            width: 100%;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        
+        .media-message audio {
+            width: 100%;
+        }
+        
+        .file-message {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        /* Input Area */
+        .input-container {
+            background: white;
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .input-btn {
+            background: none;
+            border: none;
+            color: #667eea;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .input-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .message-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 12px 16px;
+            border-radius: 25px;
+            background: #f8f9fa;
+            font-size: 14px;
+        }
+        
+        .send-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .send-btn:hover {
+            background: #5a67d8;
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Recording Interface */
+        .recording-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .recording-modal {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 300px;
+        }
+        
+        .recording-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .record-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .record-btn.recording {
+            background: #ff4757;
+            animation: pulse 1s infinite;
+        }
+        
+        .record-btn.stop {
+            background: #333;
+        }
+        
+        .record-btn.send {
+            background: #667eea;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Contact Management */
+        .contact-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .auth-card {
+                padding: 30px 20px;
+            }
+            
+            .message-bubble {
+                max-width: 85%;
+            }
+            
+            .input-container {
+                padding: 10px 15px;
+            }
+        }
+        
+        /* Hidden elements */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Authentication Screen -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-card">
+            <h1 class="auth-title">SecureChat</h1>
+            <p class="auth-subtitle">Private messaging between two people</p>
+            <button id="googleSignIn" class="google-signin-btn">
+                <i data-feather="mail"></i>
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Chat Interface -->
+    <div id="chatContainer" class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="contact-avatar">
+                    <i data-feather="user"></i>
+                </div>
+                <div class="contact-info">
+                    <h3 id="contactName">Select Contact</h3>
+                    <div class="contact-status" id="contactStatus">offline</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" id="addContactBtn" title="Add Contact">
+                    <i data-feather="user-plus"></i>
+                </button>
+                <button class="header-btn" id="settingsBtn" title="Settings">
+                    <i data-feather="settings"></i>
+                </button>
+                <button class="header-btn" id="logoutBtn" title="Logout">
+                    <i data-feather="log-out"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages Container -->
+        <div class="messages-container" id="messagesContainer">
+            <!-- Messages will be dynamically added here -->
+        </div>
+        
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typingIndicator">
+            Contact is typing...
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-container">
+            <div class="input-actions">
+                <button class="input-btn" id="attachFileBtn" title="Attach File">
+                    <i data-feather="paperclip"></i>
+                </button>
+                <button class="input-btn" id="captureImageBtn" title="Take Photo">
+                    <i data-feather="camera"></i>
+                </button>
+                <button class="input-btn" id="recordAudioBtn" title="Record Audio">
+                    <i data-feather="mic"></i>
+                </button>
+            </div>
+            <input type="text" class="message-input" id="messageInput" placeholder="Type a message...">
+            <button class="send-btn" id="sendBtn" disabled>
+                <i data-feather="send"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="contact-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Contact</h3>
+                <button class="close-btn" id="closeContactModal">&times;</button>
+            </div>
+            <form id="addContactForm">
+                <div class="form-group">
+                    <label for="contactEmail">Email Address</label>
+                    <input type="email" id="contactEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="contactDisplayName">Display Name</label>
+                    <input type="text" id="contactDisplayName" required>
+                </div>
+                <button type="submit" class="btn">Add Contact</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recording Overlay -->
+    <div id="recordingOverlay" class="recording-overlay">
+        <div class="recording-modal">
+            <h3>Recording Audio</h3>
+            <p id="recordingStatus">Press record to start</p>
+            <div class="recording-controls">
+                <button class="record-btn" id="startRecordBtn">
+                    <i data-feather="mic"></i>
+                </button>
+                <button class="record-btn stop hidden" id="stopRecordBtn">
+                    <i data-feather="square"></i>
+                </button>
+                <button class="record-btn send hidden" id="sendRecordBtn">
+                    <i data-feather="send"></i>
+                </button>
+                <button class="record-btn" id="cancelRecordBtn">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="fileInput" accept="image/*,audio/*,.pdf,.doc,.docx,.txt" style="display: none;">
+    <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
+
+    <script>
+        // Firebase Configuration - REPLACE WITH YOUR CONFIG
+       const firebaseConfig = {
+  apiKey: "AIzaSyCCbi7_u7KzYp6MVfc-o_JeTjL_yD6XzhI",
+  authDomain: "ecurechat.firebaseapp.com",
+  projectId: "ecurechat",
+  storageBucket: "ecurechat.firebasestorage.app",
+  messagingSenderId: "883075310263",
+  appId: "1:883075310263:web:f226de79ec06232cd5a332"
+};
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const firestore = firebase.firestore();
+        const storage = firebase.storage();
+
+        // Global variables
+        let currentUser = null;
+        let currentContact = null;
+        let messagesListener = null;
+        let typingTimeout = null;
+        let mediaRecorder = null;
+        let recordedBlobs = [];
+
+        // DOM elements
+        const authScreen = document.getElementById('authScreen');
+        const chatContainer = document.getElementById('chatContainer');
+        const googleSignInBtn = document.getElementById('googleSignIn');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const addContactBtn = document.getElementById('addContactBtn');
+        const contactModal = document.getElementById('contactModal');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Initialize the app
+        function initializeApp() {
+            feather.replace();
+            setupEventListeners();
+            
+            // Check if user is already authenticated
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    currentUser = user;
+                    showChatInterface();
+                    loadContacts();
+                } else {
+                    showAuthScreen();
+                }
+            });
+        }
+
+        // Event listeners setup
+        function setupEventListeners() {
+            // Authentication
+            googleSignInBtn.addEventListener('click', signInWithGoogle);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+
+            // Contact management
+            addContactBtn.addEventListener('click', () => {
+                contactModal.style.display = 'flex';
+            });
+            
+            document.getElementById('closeContactModal').addEventListener('click', () => {
+                contactModal.style.display = 'none';
+            });
+            
+            document.getElementById('addContactForm').addEventListener('submit', addContact);
+
+            // Messaging
+            messageInput.addEventListener('input', handleTyping);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            sendBtn.addEventListener('click', sendMessage);
+
+            // Media handling
+            document.getElementById('attachFileBtn').addEventListener('click', () => {
+                document.getElementById('fileInput').click();
+            });
+            
+            document.getElementById('captureImageBtn').addEventListener('click', () => {
+                document.getElementById('imageInput').click();
+            });
+            
+            document.getElementById('recordAudioBtn').addEventListener('click', showRecordingModal);
+            
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            document.getElementById('imageInput').addEventListener('change', handleImageCapture);
+
+            // Recording controls
+            document.getElementById('startRecordBtn').addEventListener('click', startRecording);
+            document.getElementById('stopRecordBtn').addEventListener('click', stopRecording);
+            document.getElementById('sendRecordBtn').addEventListener('click', sendRecording);
+            document.getElementById('cancelRecordBtn').addEventListener('click', cancelRecording);
+        }
+
+        // Authentication functions
+        async function signInWithGoogle() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.addScope('email');
+                provider.addScope('profile');
+                
+                const result = await auth.signInWithPopup(provider);
+                console.log('Signed in successfully:', result.user.email);
+                
+                // Create user profile in Firestore
+                await createUserProfile(result.user);
+                
+            } catch (error) {
+                console.error('Sign in error:', error);
+                alert('Failed to sign in. Please try again.');
+            }
+        }
+
+        async function createUserProfile(user) {
+            const userRef = firestore.collection('users').doc(user.uid);
+            const userDoc = await userRef.get();
+            
+            if (!userDoc.exists) {
+                await userRef.set({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                    contacts: []
+                });
+            } else {
+                // Update last seen
+                await userRef.update({
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        }
+
+        function logout() {
+            auth.signOut().then(() => {
+                currentUser = null;
+                currentContact = null;
+                if (messagesListener) {
+                    messagesListener();
+                }
+                showAuthScreen();
+            });
+        }
+
+        // UI navigation functions
+        function showAuthScreen() {
+            authScreen.style.display = 'flex';
+            chatContainer.style.display = 'none';
+        }
+
+        function showChatInterface() {
+            authScreen.style.display = 'none';
+            chatContainer.style.display = 'flex';
+        }
+
+        // Contact management
+        async function loadContacts() {
+            try {
+                const userDoc = await firestore.collection('users').doc(currentUser.uid).get();
+                const userData = userDoc.data();
+                
+                if (userData && userData.contacts && userData.contacts.length > 0) {
+                    // For now, just use the first contact
+                    const firstContact = userData.contacts[0];
+                    currentContact = firstContact;
+                    document.getElementById('contactName').textContent = firstContact.displayName;
+                    loadMessages();
+                }
+            } catch (error) {
+                console.error('Error loading contacts:', error);
+            }
+        }
+
+        async function addContact(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('contactEmail').value.trim();
+            const displayName = document.getElementById('contactDisplayName').value.trim();
+            
+            if (!email || !displayName) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                // Find user by email
+                const usersQuery = await firestore.collection('users').where('email', '==', email).get();
+                
+                if (usersQuery.empty) {
+                    alert('User not found. Make sure they have signed up with this email.');
+                    return;
+                }
+
+                const contactUser = usersQuery.docs[0].data();
+                const contactInfo = {
+                    uid: contactUser.uid,
+                    email: contactUser.email,
+                    displayName: displayName
+                };
+
+                // Add to current user's contacts
+                await firestore.collection('users').doc(currentUser.uid).update({
+                    contacts: firebase.firestore.FieldValue.arrayUnion(contactInfo)
+                });
+
+                // Add current user to contact's contacts
+                const currentUserInfo = {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    displayName: currentUser.displayName
+                };
+
+                await firestore.collection('users').doc(contactUser.uid).update({
+                    contacts: firebase.firestore.FieldValue.arrayUnion(currentUserInfo)
+                });
+
+                // Set as current contact
+                currentContact = contactInfo;
+                document.getElementById('contactName').textContent = displayName;
+                
+                // Close modal and reset form
+                contactModal.style.display = 'none';
+                document.getElementById('addContactForm').reset();
+                
+                // Load messages
+                loadMessages();
+                
+                alert('Contact added successfully!');
+                
+            } catch (error) {
+                console.error('Error adding contact:', error);
+                alert('Failed to add contact. Please try again.');
+            }
+        }
+
+        // Messaging functions
+        function loadMessages() {
+            if (!currentContact) return;
+
+            if (messagesListener) {
+                messagesListener();
+            }
+
+            const chatId = generateChatId(currentUser.uid, currentContact.uid);
+            
+            messagesListener = firestore
+                .collection('chats')
+                .doc(chatId)
+                .collection('messages')
+                .orderBy('timestamp', 'asc')
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            displayMessage(change.doc.data());
+                        }
+                    });
+                });
+        }
+
+        function generateChatId(uid1, uid2) {
+            return [uid1, uid2].sort().join('_');
+        }
+
+        async function sendMessage(messageData = null) {
+            if (!currentContact) {
+                alert('Please select a contact first');
+                return;
+            }
+
+            let message;
+            
+            if (messageData) {
+                message = messageData;
+            } else {
+                const text = messageInput.value.trim();
+                if (!text) return;
+
+                message = {
+                    type: 'text',
+                    content: text
+                };
+            }
+
+            try {
+                const chatId = generateChatId(currentUser.uid, currentContact.uid);
+                
+                const messageDoc = {
+                    ...message,
+                    senderId: currentUser.uid,
+                    senderName: currentUser.displayName,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false,
+                    id: Date.now().toString()
+                };
+
+                await firestore
+                    .collection('chats')
+                    .doc(chatId)
+                    .collection('messages')
+                    .add(messageDoc);
+
+                // Update chat metadata
+                await firestore
+                    .collection('chats')
+                    .doc(chatId)
+                    .set({
+                        participants: [currentUser.uid, currentContact.uid],
+                        lastMessage: message.content || 'Media',
+                        lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+
+                // Clear input
+                if (!messageData) {
+                    messageInput.value = '';
+                    sendBtn.disabled = true;
+                }
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Failed to send message. Please try again.');
+            }
+        }
+
+        function displayMessage(messageData) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${messageData.senderId === currentUser.uid ? 'own' : 'other'}`;
+            
+            let contentHTML = '';
+            
+            switch (messageData.type) {
+                case 'text':
+                    contentHTML = `<div class="message-bubble">
+                        ${escapeHtml(messageData.content)}
+                        <div class="message-time">${formatTime(messageData.timestamp)}</div>
+                    </div>`;
+                    break;
+                    
+                case 'image':
+                    contentHTML = `<div class="message-bubble media-message">
+                        <img src="${messageData.url}" alt="Image" onclick="openImage('${messageData.url}')">
+                        <div class="message-time">${formatTime(messageData.timestamp)}</div>
+                    </div>`;
+                    break;
+                    
+                case 'audio':
+                    contentHTML = `<div class="message-bubble media-message">
+                        <audio controls>
+                            <source src="${messageData.url}" type="audio/wav">
+                            Your browser does not support audio playback.
+                        </audio>
+                        <div class="message-time">${formatTime(messageData.timestamp)}</div>
+                    </div>`;
+                    break;
+                    
+                case 'file':
+                    contentHTML = `<div class="message-bubble">
+                        <div class="file-message" onclick="downloadFile('${messageData.url}', '${messageData.fileName}')">
+                            <i data-feather="file"></i>
+                            <span>${messageData.fileName}</span>
+                        </div>
+                        <div class="message-time">${formatTime(messageData.timestamp)}</div>
+                    </div>`;
+                    break;
+            }
+            
+            messageDiv.innerHTML = contentHTML;
+            messagesContainer.appendChild(messageDiv);
+            
+            // Replace feather icons
+            feather.replace();
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Media handling functions
+        async function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                alert('File size must be less than 2MB');
+                return;
+            }
+            
+            try {
+                const url = await uploadFile(file);
+                const messageData = {
+                    type: 'file',
+                    url: url,
+                    fileName: file.name,
+                    content: `Shared a file: ${file.name}`
+                };
+                
+                await sendMessage(messageData);
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                alert('Failed to upload file. Please try again.');
+            }
+        }
+
+        async function handleImageCapture(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            try {
+                const url = await uploadFile(file);
+                const messageData = {
+                    type: 'image',
+                    url: url,
+                    content: 'Shared an image'
+                };
+                
+                await sendMessage(messageData);
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Failed to upload image. Please try again.');
+            }
+        }
+
+        async function uploadFile(file) {
+            const timestamp = Date.now();
+            const fileName = `${currentUser.uid}_${timestamp}_${file.name}`;
+            const storageRef = storage.ref().child(`files/${fileName}`);
+            
+            const snapshot = await storageRef.put(file);
+            const downloadURL = await snapshot.ref.getDownloadURL();
+            
+            return downloadURL;
+        }
+
+        // Audio recording functions
+        function showRecordingModal() {
+            document.getElementById('recordingOverlay').style.display = 'flex';
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                recordedBlobs = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        recordedBlobs.push(event.data);
+                    }
+                };
+
+                mediaRecorder.start();
+                
+                document.getElementById('startRecordBtn').classList.add('hidden');
+                document.getElementById('stopRecordBtn').classList.remove('hidden');
+                document.getElementById('startRecordBtn').classList.add('recording');
+                document.getElementById('recordingStatus').textContent = 'Recording...';
+                
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                alert('Could not access microphone. Please check permissions.');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                
+                document.getElementById('stopRecordBtn').classList.add('hidden');
+                document.getElementById('sendRecordBtn').classList.remove('hidden');
+                document.getElementById('recordingStatus').textContent = 'Recording complete';
+            }
+        }
+
+        async function sendRecording() {
+            if (recordedBlobs.length === 0) return;
+            
+            try {
+                const blob = new Blob(recordedBlobs, { type: 'audio/wav' });
+                const url = await uploadAudioBlob(blob);
+                
+                const messageData = {
+                    type: 'audio',
+                    url: url,
+                    content: 'Shared a voice message'
+                };
+                
+                await sendMessage(messageData);
+                cancelRecording();
+                
+            } catch (error) {
+                console.error('Error sending recording:', error);
+                alert('Failed to send recording. Please try again.');
+            }
+        }
+
+        function cancelRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            
+            recordedBlobs = [];
+            document.getElementById('recordingOverlay').style.display = 'none';
+            
+            // Reset UI
+            document.getElementById('startRecordBtn').classList.remove('hidden', 'recording');
+            document.getElementById('stopRecordBtn').classList.add('hidden');
+            document.getElementById('sendRecordBtn').classList.add('hidden');
+            document.getElementById('recordingStatus').textContent = 'Press record to start';
+        }
+
+        async function uploadAudioBlob(blob) {
+            const timestamp = Date.now();
+            const fileName = `audio_${currentUser.uid}_${timestamp}.wav`;
+            const storageRef = storage.ref().child(`audio/${fileName}`);
+            
+            const snapshot = await storageRef.put(blob);
+            const downloadURL = await snapshot.ref.getDownloadURL();
+            
+            return downloadURL;
+        }
+
+        // Typing indicator
+        function handleTyping() {
+            const text = messageInput.value.trim();
+            sendBtn.disabled = !text;
+            
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+            }
+            
+            if (text) {
+                // Send typing indicator
+                sendTypingIndicator(true);
+                
+                typingTimeout = setTimeout(() => {
+                    sendTypingIndicator(false);
+                }, 3000);
+            } else {
+                sendTypingIndicator(false);
+            }
+        }
+
+        async function sendTypingIndicator(isTyping) {
+            if (!currentContact) return;
+            
+            try {
+                const chatId = generateChatId(currentUser.uid, currentContact.uid);
+                await firestore
+                    .collection('chats')
+                    .doc(chatId)
+                    .collection('typing')
+                    .doc(currentUser.uid)
+                    .set({
+                        isTyping: isTyping,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+            } catch (error) {
+                console.error('Error sending typing indicator:', error);
+            }
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, (m) => map[m]);
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 24 * 60 * 60 * 1000) { // Less than 24 hours
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+
+        function openImage(url) {
+            window.open(url, '_blank');
+        }
+
+        function downloadFile(url, fileName) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // Enable input when there's text
+        messageInput.addEventListener('input', () => {
+            sendBtn.disabled = !messageInput.value.trim();
+        });
+    </script>
+</body>
+</html>
