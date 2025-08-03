@@ -23,9 +23,10 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f0f0f0;
             height: 100vh;
             overflow: hidden;
+            margin: 0;
         }
         
         .app-container {
@@ -40,44 +41,48 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #075e54 0%, #128c7e 100%);
+            padding: 20px;
         }
         
         .auth-card {
             background: white;
             padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             text-align: center;
             max-width: 400px;
-            width: 90%;
+            width: 100%;
         }
         
         .auth-title {
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 10px;
+            font-size: 2.2rem;
+            color: #075e54;
+            margin-bottom: 8px;
+            font-weight: 600;
         }
         
         .auth-subtitle {
-            color: #666;
+            color: #54656f;
             margin-bottom: 30px;
+            font-size: 15px;
         }
         
         .google-signin-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             width: 100%;
-            padding: 12px;
+            padding: 14px 20px;
             background: #4285f4;
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 16px;
+            font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.2s;
         }
         
         .google-signin-btn:hover {
@@ -372,7 +377,7 @@
         
         .modal-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
@@ -417,18 +422,118 @@
             background: #5a67d8;
         }
         
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .settings-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .setting-item {
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+        
+        .setting-item h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .setting-item p {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
+            .chat-container {
+                max-width: 100%;
+                height: 100vh;
+            }
+            
+            .chat-header {
+                padding: 8px 12px;
+            }
+            
+            .contact-info h3 {
+                font-size: 15px;
+            }
+            
+            .contact-status {
+                font-size: 12px;
+            }
+            
+            .header-btn {
+                width: 36px;
+                height: 36px;
+            }
+            
             .auth-card {
                 padding: 30px 20px;
+                margin: 20px;
+            }
+            
+            .message-bubble {
+                max-width: 80%;
+                padding: 8px 12px;
+            }
+            
+            .input-container {
+                padding: 6px 12px;
+            }
+            
+            .input-btn {
+                width: 36px;
+                height: 36px;
+            }
+            
+            .send-btn {
+                width: 36px;
+                height: 36px;
+            }
+            
+            .message-input {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 8px 12px;
+            }
+            
+            .modal-content {
+                margin: 20px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header-actions {
+                gap: 4px;
+            }
+            
+            .input-actions {
+                gap: 2px;
             }
             
             .message-bubble {
                 max-width: 85%;
-            }
-            
-            .input-container {
-                padding: 10px 15px;
+                font-size: 14px;
             }
         }
         
@@ -528,6 +633,33 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="contact-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="close-btn" id="closeSettingsModal">&times;</button>
+            </div>
+            <div class="settings-options">
+                <div class="setting-item">
+                    <h4>Export Chat History</h4>
+                    <p>Download your chat messages as a text file</p>
+                    <button class="btn" id="exportChatBtn">Export Messages</button>
+                </div>
+                <div class="setting-item">
+                    <h4>Clear All Messages</h4>
+                    <p>Permanently delete all messages in this chat</p>
+                    <button class="btn btn-danger" id="clearChatBtn">Clear Chat</button>
+                </div>
+                <div class="setting-item">
+                    <h4>Account</h4>
+                    <p>Signed in as: <span id="userEmail"></span></p>
+                    <button class="btn btn-secondary" id="signOutBtn">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Recording Overlay -->
     <div id="recordingOverlay" class="recording-overlay">
         <div class="recording-modal">
@@ -555,15 +687,15 @@
     <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
 
     <script>
-        // Firebase Configuration - REPLACE WITH YOUR CONFIG
-       const firebaseConfig = {
-  apiKey: "AIzaSyCCbi7_u7KzYp6MVfc-o_JeTjL_yD6XzhI",
-  authDomain: "ecurechat.firebaseapp.com",
-  projectId: "ecurechat",
-  storageBucket: "ecurechat.firebasestorage.app",
-  messagingSenderId: "883075310263",
-  appId: "1:883075310263:web:f226de79ec06232cd5a332"
-};
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCCbi7_u7KzYp6MVfc-o_JeTjL_yD6XzhI",
+            authDomain: "ecurechat.firebaseapp.com",
+            projectId: "ecurechat",
+            storageBucket: "ecurechat.firebasestorage.app",
+            messagingSenderId: "883075310263",
+            appId: "1:883075310263:web:f226de79ec06232cd5a332"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -588,6 +720,7 @@
         const sendBtn = document.getElementById('sendBtn');
         const addContactBtn = document.getElementById('addContactBtn');
         const contactModal = document.getElementById('contactModal');
+        const settingsModal = document.getElementById('settingsModal');
         const typingIndicator = document.getElementById('typingIndicator');
 
         // Initialize the app
@@ -623,6 +756,35 @@
             });
             
             document.getElementById('addContactForm').addEventListener('submit', addContact);
+
+            // Settings management
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                if (currentUser) {
+                    document.getElementById('userEmail').textContent = currentUser.email;
+                }
+                settingsModal.style.display = 'flex';
+            });
+            
+            document.getElementById('closeSettingsModal').addEventListener('click', () => {
+                settingsModal.style.display = 'none';
+            });
+            
+            document.getElementById('exportChatBtn').addEventListener('click', exportChatHistory);
+            document.getElementById('clearChatBtn').addEventListener('click', clearChatHistory);
+            document.getElementById('signOutBtn').addEventListener('click', logout);
+
+            // Close modals when clicking outside
+            contactModal.addEventListener('click', (e) => {
+                if (e.target === contactModal) {
+                    contactModal.style.display = 'none';
+                }
+            });
+            
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    settingsModal.style.display = 'none';
+                }
+            });
 
             // Messaging
             messageInput.addEventListener('input', handleTyping);
@@ -758,26 +920,22 @@
                 }
 
                 const contactUser = usersQuery.docs[0].data();
+                
+                // Check if trying to add yourself
+                if (contactUser.uid === currentUser.uid) {
+                    alert('You cannot add yourself as a contact.');
+                    return;
+                }
+
                 const contactInfo = {
                     uid: contactUser.uid,
                     email: contactUser.email,
                     displayName: displayName
                 };
 
-                // Add to current user's contacts
+                // Only add to current user's contacts (secure approach)
                 await firestore.collection('users').doc(currentUser.uid).update({
                     contacts: firebase.firestore.FieldValue.arrayUnion(contactInfo)
-                });
-
-                // Add current user to contact's contacts
-                const currentUserInfo = {
-                    uid: currentUser.uid,
-                    email: currentUser.email,
-                    displayName: currentUser.displayName
-                };
-
-                await firestore.collection('users').doc(contactUser.uid).update({
-                    contacts: firebase.firestore.FieldValue.arrayUnion(currentUserInfo)
                 });
 
                 // Set as current contact
@@ -791,7 +949,7 @@
                 // Load messages
                 loadMessages();
                 
-                alert('Contact added successfully!');
+                alert('Contact added successfully! Note: They will need to add you back to see your messages.');
                 
             } catch (error) {
                 console.error('Error adding contact:', error);
@@ -1161,6 +1319,87 @@
             link.href = url;
             link.download = fileName;
             link.click();
+        }
+
+        // Settings functions
+        async function exportChatHistory() {
+            if (!currentContact) {
+                alert('No active chat to export');
+                return;
+            }
+
+            try {
+                const chatId = generateChatId(currentUser.uid, currentContact.uid);
+                const messagesSnapshot = await firestore
+                    .collection('chats')
+                    .doc(chatId)
+                    .collection('messages')
+                    .orderBy('timestamp', 'asc')
+                    .get();
+
+                let chatText = `Chat Export with ${currentContact.displayName}\n`;
+                chatText += `Exported on: ${new Date().toLocaleString()}\n`;
+                chatText += `${'='.repeat(50)}\n\n`;
+
+                messagesSnapshot.docs.forEach(doc => {
+                    const msg = doc.data();
+                    const time = msg.timestamp ? formatTime(msg.timestamp) : 'Unknown time';
+                    const sender = msg.senderId === currentUser.uid ? 'You' : currentContact.displayName;
+                    const content = msg.content || '[Media]';
+                    
+                    chatText += `[${time}] ${sender}: ${content}\n`;
+                });
+
+                const blob = new Blob([chatText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `chat_${currentContact.displayName}_${new Date().toISOString().split('T')[0]}.txt`;
+                link.click();
+                URL.revokeObjectURL(url);
+
+                settingsModal.style.display = 'none';
+                alert('Chat history exported successfully!');
+            } catch (error) {
+                console.error('Error exporting chat:', error);
+                alert('Failed to export chat history');
+            }
+        }
+
+        async function clearChatHistory() {
+            if (!currentContact) {
+                alert('No active chat to clear');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete all messages? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const chatId = generateChatId(currentUser.uid, currentContact.uid);
+                const messagesSnapshot = await firestore
+                    .collection('chats')
+                    .doc(chatId)
+                    .collection('messages')
+                    .get();
+
+                const batch = firestore.batch();
+                messagesSnapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+
+                await batch.commit();
+                
+                // Clear the messages container
+                messagesContainer.innerHTML = '';
+                
+                settingsModal.style.display = 'none';
+                alert('Chat history cleared successfully!');
+            } catch (error) {
+                console.error('Error clearing chat:', error);
+                alert('Failed to clear chat history');
+            }
         }
 
         // Initialize the app when DOM is loaded
