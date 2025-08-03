@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureChat - Private Messaging</title>
+  <!-- Feather Icons -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.js"></script>
+  <!-- Firebase Modern Modular SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      onSnapshot,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // DOM elements
+    const authScreen = document.getElementById('authScreen');
+    const chatScreen = document.getElementById('chatScreen');
+    const googleSignInBtn = document.getElementById('googleSignIn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const contactName = document.getElementById('contactName');
+    const messagesDiv = document.getElementById('messages');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let currentUser = null;
+    let unsubscribeMessages = null;
+
+    function showAuth() {
+      authScreen.style.display = 'flex';
+      chatScreen.style.display = 'none';
+    }
+
+    function showChat() {
+      authScreen.style.display = 'none';
+      chatScreen.style.display = 'flex';
+    }
+
+    async function signIn() {
+      const provider = new GoogleAuthProvider();
+      try {
+        const result = await signInWithPopup(auth, provider);
+        // signed in
+      } catch (err) {
+        console.error('Sign-in error:', err);
+        alert('Could not sign in.');
+      }
+    }
+
+    function startChat(user) {
+      currentUser = user;
+      showChat();
+      contactName.textContent = user.displayName;
+      const chatId = user.uid;
+
+      // Unsubscribe previous listener
+      if (unsubscribeMessages) unsubscribeMessages();
+
+      const messagesQuery = query(
+        collection(db, 'chats', chatId, 'messages'),
+        orderBy('timestamp')
+      );
+
+      unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+        messagesDiv.innerHTML = '';
+        snapshot.forEach(doc => {
+          const m = doc.data();
+          const msgDiv = document.createElement('div');
+          msgDiv.className = 'message ' + (m.senderId === currentUser.uid ? 'own' : 'other');
+          msgDiv.textContent = m.content;
+          messagesDiv.appendChild(msgDiv);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        feather.replace();
+      });
+    }
+
+    async function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || !currentUser) return;
+      const chatId = currentUser.uid;
+      try {
+        await addDoc(collection(db, 'chats', chatId, 'messages'), {
+          senderId: currentUser.uid,
+          content: text,
+          timestamp: serverTimestamp()
+        });
+        messageInput.value = '';
+        sendBtn.disabled = true;
+      } catch (err) {
+        console.error('Send message error:', err);
+        alert('Could not send message.');
+      }
+    }
+
+    // Initialize UI and Firebase listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      feather.replace();
+      showAuth();
+      googleSignInBtn.addEventListener('click', signIn);
+      logoutBtn.addEventListener('click', () => signOut(auth));
+      messageInput.addEventListener('input', () => {
+        sendBtn.disabled = !messageInput.value.trim();
+      });
+      sendBtn.addEventListener('click', sendMessage);
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) startChat(user);
+        else showAuth();
+      });
+    });
+  </script>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body, html { height:100%; width:100%; font-family: Arial, sans-serif; background:#f0f0f0; }
+    .auth-screen, .chat-screen { display:flex; align-items:center; justify-content:center; height:100%; width:100%; }
+    .auth-card { background:#fff; padding:2rem; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); text-align:center; }
+    .auth-title { font-size:2rem; margin-bottom:1rem; color:#075e54; }
+    .google-signin-btn { display:flex; align-items:center; justify-content:center; gap:0.5rem; padding:0.75rem 1.5rem; background:#4285f4; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    .google-signin-btn:hover { background:#3367d6; }
+    .chat-screen { display:none; flex-direction:column; }
+    .chat-header { background:#075e54; color:#fff; padding:1rem; display:flex; align-items:center; justify-content:space-between; }
+    .chat-header h2 { font-size:1.25rem; }
+    .chat-container { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#fff; }
+    .messages { flex:1; overflow-y:auto; padding:1rem; background:#e5ddd5; }
+    .message { max-width:70%; margin-bottom:0.75rem; padding:0.5rem 0.75rem; border-radius:18px; word-wrap:break-word; }
+    .message.own { margin-left:auto; background:#dcf8c6; }
+    .message.other { margin-right:auto; background:#fff; }
+    .input-area { padding:0.5rem; background:#f0f0f0; display:flex; align-items:center; gap:0.5rem; border-top:1px solid #ddd; }
+    .input-area input { flex:1; padding:0.75rem; border:1px solid #ccc; border-radius:20px; outline:none; }
+    .input-area button { background:#075e54; border:none; color:#fff; padding:0.75rem; border-radius:50%; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <h1 class="auth-title">SecureChat</h1>
+      <button id="googleSignIn" class="google-signin-btn">
+        <i data-feather="mail"></i> Sign in with Google
+      </button>
+    </div>
+  </div>
+  <div id="chatScreen" class="chat-screen">
+    <div class="chat-header">
+      <h2 id="contactName">-- Select Contact --</h2>
+      <button id="logoutBtn" title="Logout"><i data-feather="log-out"></i></button>
+    </div>
+    <div class="chat-container">
+      <div id="messages" class="messages"></div>
+      <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <button id="sendBtn" disabled><i data-feather="send"></i></button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
